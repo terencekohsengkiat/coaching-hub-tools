@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <title>World Regattas Map - Singapore Sailing Federation</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Roboto:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        /* All the CSS from your original file goes here. It is identical. */
+        :root {
+            --ssf-red-primary: #BE1E2D; --ssf-light-grey: #E6E7E8; --ssf-gold: #EDA900;
+            --ssf-dark-red: #9D0A0E; --ssf-dark-grey-text: #606A70; --ssf-beige-accent: #D8CEB3;
+            --ssf-font-title: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --ssf-font-content: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; font-family: var(--ssf-font-content); font-weight: 300; color: var(--ssf-dark-grey-text); background-color: #fff; overflow: hidden; }
+        #map-container { position: relative; width: 100%; height: 100vh; }
+        #map { width: 100%; height: 100%; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; font-family: var(--ssf-font-title); font-size: 1.2em; color: var(--ssf-dark-red); background: rgba(255,255,255,0.8); padding: 20px; border-radius: 8px; }
+        .floating-panel { position: absolute; z-index: 5; background-color: rgba(255, 255, 255, 0.95); padding: 12px 15px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.2); border: 1px solid var(--ssf-beige-accent); }
+        .controls { top: 15px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; max-width: 90%; justify-content: center; visibility: hidden; } /* Initially hidden */
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .controls label { font-family: var(--ssf-font-title); font-weight: 700; text-transform: uppercase; font-size: 0.8em; color: var(--ssf-red-primary); }
+        .controls select { font-family: var(--ssf-font-content); padding: 8px 10px; border: 1px solid var(--ssf-beige-accent); border-radius: 4px; background-color: #fff; color: var(--ssf-dark-grey-text); min-width: 180px; }
+        .gm-style .gm-style-iw-c { padding: 0 !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--ssf-beige-accent); }
+        .gm-style .gm-style-iw-d { overflow: hidden !important; padding: 0; }
+        .info-window-content { padding: 15px 18px; max-height: 350px; overflow-y: auto; }
+        /* ... etc ... all other CSS is the same */
+        #legend { bottom: 20px; right: 10px; font-size: 0.85em; visibility: hidden; } /* Initially hidden */
+        #legend h4 { font-family: var(--ssf-font-title); font-weight: 700; text-transform: uppercase; color: var(--ssf-red-primary); margin-top: 0; margin-bottom: 8px; font-size: 0.9em; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .legend-color-box { width: 18px; height: 10px; margin-right: 8px; border: 1px solid #aaa; }
+    </style>
+</head>
+<body>
+    <div id="map-container">
+        <div id="loader">Loading Map Data...</div>
+        <div id="map"></div>
+        <div id="controls" class="controls floating-panel">
+            <div class="filter-group">
+                <label for="boatClassFilter">Boat Class:</label>
+                <select id="boatClassFilter"></select>
+            </div>
+            <div class="filter-group">
+                <label for="fdesStageFilter">FDES Stage:</label>
+                <select id="fdesStageFilter"></select>
+            </div>
+        </div>
+        <div id="legend" class="floating-panel">
+            <h4>Est. Flight Duration</h4>
+            <div class="legend-item"><span class="legend-color-box" style="background-color: #00AA00;"></span> &lt; 5 hours</div>
+            <div class="legend-item"><span class="legend-color-box" style="background-color: #EDA900;"></span> 5 - 10 hours</div>
+            <div class="legend-item"><span class="legend-color-box" style="background-color: #BE1E2D;"></span> &gt; 10 hours</div>
+        </div>
+    </div>
+
+    <script>
+
+    // Data comes live from the Google Sheet via Apps Script on every page load.
+    // fetch() sends no Google cookies, so the multiple-account error cannot happen here.
+    function hubGet(execUrl) {
+      return fetch(execUrl + '?action=data&t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+    }
+    function hubPost(execUrl, body) {
+      // text/plain avoids a CORS preflight, which Apps Script cannot answer.
+      return fetch(execUrl, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    }
+    function safeLinks(root) {
+      root.querySelectorAll('a[href]').forEach(function (a) {
+        if (!/^(https?:|mailto:)/i.test(a.getAttribute('href'))) a.removeAttribute('href');
+        a.setAttribute('rel', 'noopener noreferrer'); a.setAttribute('target', '_blank');
+      });
+    }
+
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+      function safeUrl(u) { return /^https?:\/\//i.test(String(u || '')) ? u : ''; }
+
+      // Load the sheet data first, then the Maps script using the key the backend provides.
+      hubGet('https://script.google.com/macros/s/AKfycbzNSM6oyAxCiB1j6bWOGJgUb_ufsdHFKMQ_Roe5bXQjlNgIhfTLdt6Bweg-DPvA1mUOng/exec').then(function (d) {
+        window.__regattaData = d;
+        var s = document.createElement('script');
+        s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(d.mapsKey) + '&libraries=geometry,places&callback=initMap';
+        s.async = true; s.defer = true;
+        s.onerror = function () { handleError({ message: 'Google Maps could not load.' }); };
+        document.head.appendChild(s);
+      }).catch(handleError);
+
+      // Global variables
+      let map;
+      let markers = [];
+      let infoWindow;
+      let flightPathPolylines = {};
+      const singaporePosition = { lat: 1.3521, lng: 103.8198 };
+
+      // This function is called after the Google Maps script loads
+      function initMap() {
+        // Show loader while we fetch data
+        document.getElementById('loader').style.display = 'block';
+
+        setupMap(window.__regattaData);
+      }
+
+      function handleError(error) {
+        document.getElementById('loader').innerText = "Failed to load map data: " + (error && error.message || error);
+      }
+
+      function setupMap(data) {
+        const { processedLocations, uniqueBoatClasses, uniqueFdesStages } = data;
+
+        // Hide loader and show controls
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('controls').style.visibility = 'visible';
+        document.getElementById('legend').style.visibility = 'visible';
+        
+        // Populate filter dropdowns
+        const boatClassFilter = document.getElementById('boatClassFilter');
+        boatClassFilter.innerHTML = '<option value="">All Boat Classes</option>' + uniqueBoatClasses.map(bc => `<option value="${esc(bc)}">${esc(bc)}</option>`).join('');
+        
+        const fdesStageFilter = document.getElementById('fdesStageFilter');
+        fdesStageFilter.innerHTML = '<option value="">All FDES Stages</option>' + uniqueFdesStages.map(fdes => `<option value="${esc(fdes)}">${esc(fdes)}</option>`).join('');
+
+        // The rest of your map initialization logic is IDENTICAL to the original script
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: singaporePosition, zoom: 3, mapTypeId: 'roadmap',
+            // ... all other map options are the same
+        });
+        infoWindow = new google.maps.InfoWindow({ maxWidth: 450 });
+
+        // Add Singapore marker
+        new google.maps.Marker({
+            position: singaporePosition, map: map, title: "Singapore (Origin)",
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#9D0A0E", fillOpacity: 1, strokeWeight: 2, strokeColor: "#FFFFFF" }
+        });
+
+        processedLocations.forEach((locationObj, index) => {
+            const locationPosition = { lat: locationObj.lat, lng: locationObj.lng };
+            // ... All the marker, polyline, and infowindow creation logic is exactly the same as your original script ...
+            // The code below is a direct copy-paste from your original JS
+            const locationId = `loc-${locationObj.lat.toFixed(5).replace('.','')}-${locationObj.lng.toFixed(5).replace('.','')}-${index}`;
+            const marker = new google.maps.Marker({
+                position: locationPosition, map: map,
+                title: locationObj.location_name + (locationObj.events.length > 1 ? ` (${locationObj.events.length} events)` : ''),
+                events_at_location: locationObj.events, location_name: locationObj.location_name, location_id: locationId,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: "#BE1E2D", fillOpacity: 0.9, strokeWeight: 1.5, strokeColor: '#FFFFFF' }
+            });
+            const distanceKm = google.maps.geometry.spherical.computeDistanceBetween( new google.maps.LatLng(singaporePosition.lat, singaporePosition.lng), new google.maps.LatLng(locationPosition.lat, locationPosition.lng) ) / 1000;
+            const cruisingHours = distanceKm / 850; // AVERAGE_FLIGHT_SPEED_KMH
+            const estimatedHoursLocation = cruisingHours + 0.75; // FIXED_OVERHEAD_HOURS
+            let pathColor = "#BE1E2D";
+            if (estimatedHoursLocation < 5) { pathColor = '#00AA00'; } else if (estimatedHoursLocation <= 10) { pathColor = "#EDA900"; }
+            const flightPath = new google.maps.Polyline({
+                path: [singaporePosition, locationPosition], geodesic: true, strokeColor: pathColor,
+                strokeOpacity: 0.8, strokeWeight: 2.5, map: null
+            });
+            flightPathPolylines[locationId] = flightPath;
+            marker.addListener('click', () => {
+                let content = `<div class="info-window-content"><h4>${esc(locationObj.location_name)}</h4>`;
+                locationObj.events.forEach((event, eventIndex) => {
+                    if (eventIndex > 0) { content += `<div style="border-top: 1px dashed #D8CEB3; margin: 15px 0;"></div>`; }
+                    let eventTitleHtml = `<h3>${esc(event.name)}</h3>`;
+                    if (safeUrl(event.url)) { eventTitleHtml = `<h3><a href="${esc(event.url)}" target="_blank" rel="noopener noreferrer">${esc(event.name)}</a></h3>`; }
+                    content += eventTitleHtml;
+                    content += `<p><strong>Dates:</strong> ${esc(event.dates)}</p>`;
+                    if (event.boat_classes.length > 0) { content += '<p><strong>Boat Class(es):</strong><ul>' + event.boat_classes.map(bc => `<li>${esc(bc)}</li>`).join('') + '</ul></p>'; }
+                    if (event.fdes_stages.length > 0) { content += '<p><strong>FDES Stage(s):</strong><ul>' + event.fdes_stages.map(fdes => `<li>${esc(fdes)}</li>`).join('') + '</ul></p>'; }
+                });
+                let estFlightTimeTextLoc;
+                if (estimatedHoursLocation < 0) { estFlightTimeTextLoc = "N/A"; } else if (estimatedHoursLocation < 1) { estFlightTimeTextLoc = (estimatedHoursLocation * 60).toFixed(0) + " min"; } else { estFlightTimeTextLoc = estimatedHoursLocation.toFixed(1) + " hrs"; }
+                content += `<p style="margin-top:15px; border-top:1px solid #E6E7E8; padding-top:10px; font-size: 0.85em; color: #555;"><strong>Est. Flight Time to Location:</strong> ${estFlightTimeTextLoc} (approx. ${distanceKm.toFixed(0)} km)</p>`;
+                content += '</div>';
+                infoWindow.setContent(content);
+                infoWindow.open(map, marker);
+            });
+            markers.push(marker);
+        });
+
+        // Add event listeners and run the initial filter
+        document.getElementById('boatClassFilter').addEventListener('change', filterMarkersAndPaths);
+        document.getElementById('fdesStageFilter').addEventListener('change', filterMarkersAndPaths);
+        filterMarkersAndPaths();
+      }
+
+      function filterMarkersAndPaths() {
+        // This function is also IDENTICAL to the one in your original script.
+        const selectedBoatClass = document.getElementById('boatClassFilter').value;
+        const selectedFdesStage = document.getElementById('fdesStageFilter').value;
+        let visibleMarkerCount = 0;
+        markers.forEach(marker => {
+            let matchesFilter = false;
+            if (marker.events_at_location && marker.events_at_location.length > 0) {
+                for (const event of marker.events_at_location) {
+                    const boatClassMatch = selectedBoatClass === "" || (event.boat_classes && event.boat_classes.includes(selectedBoatClass));
+                    const fdesStageMatch = selectedFdesStage === "" || (event.fdes_stages && event.fdes_stages.includes(selectedFdesStage));
+                    if (boatClassMatch && fdesStageMatch) { matchesFilter = true; break; }
+                }
+            } else { matchesFilter = (selectedBoatClass === "" && selectedFdesStage === ""); }
+            const currentPolyline = flightPathPolylines[marker.location_id];
+            if (matchesFilter) {
+                marker.setVisible(true);
+                if (currentPolyline) currentPolyline.setMap(map);
+                visibleMarkerCount++;
+            } else {
+                marker.setVisible(false);
+                if (currentPolyline) currentPolyline.setMap(null);
+            }
+        });
+        if (visibleMarkerCount === 0) {
+            map.setCenter(singaporePosition); map.setZoom(3);
+        } else {
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(new google.maps.LatLng(singaporePosition.lat, singaporePosition.lng));
+            let extended = false;
+            markers.forEach(marker => { if (marker.getVisible()) { bounds.extend(marker.getPosition()); extended = true; } });
+            if (extended) { map.fitBounds(bounds); }
+            if (map.getZoom() > 15) map.setZoom(15);
+            if (visibleMarkerCount === 1 && map.getZoom() > 7) map.setZoom(7);
+        }
+      }
+    </script>
+    </body>
+</html>

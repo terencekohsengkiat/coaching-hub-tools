@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* Singapore Sailing Brand Guide Adherence */
+    :root {
+      /* Defined Brand Colors */
+      --sg-sailing-red-primary: #BE1E2D;
+      --sg-sailing-red-secondary: #9D0A0E;
+      --sg-sailing-cool-grey-4c: #E6E7E8;
+      --sg-sailing-cool-grey-10c: #606A70;
+      --sg-sailing-yellow: #EDA900;
+      --sg-sailing-light-green: #D8CEB3;
+      --sg-sailing-blue: #00AABC;
+      --sg-sailing-dark-blue: #2383C6;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif; /* Roboto for general content */
+      margin: 0;
+      padding: 20px;
+      background-color: var(--sg-sailing-cool-grey-4c); /* Light grey background for the app */
+      color: var(--sg-sailing-cool-grey-10c); /* Darker grey for text */
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      border: 1px solid var(--sg-sailing-cool-grey-4c);
+    }
+    h1 {
+      font-family: 'Montserrat', sans-serif; /* Montserrat as Gotham alternative */
+      color: var(--sg-sailing-red-primary); /* Primary Red for titles */
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 2.2em;
+      border-bottom: 2px solid var(--sg-sailing-blue); /* Brand Blue border */
+      padding-bottom: 10px;
+      text-transform: uppercase; /* ALWAYS IN CAPS for titles */
+      font-weight: 700; /* Bold for headings */
+    }
+    p {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+      color: var(--sg-sailing-cool-grey-10c); /* Darker grey for body text */
+    }
+    .question-group {
+      margin-bottom: 25px;
+      padding: 15px;
+      background-color: #fdfdfd;
+      border-left: 5px solid var(--sg-sailing-blue); /* Brand Blue border */
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500; /* Roboto Medium for emphasis */
+      color: var(--sg-sailing-red-primary); /* Primary Red for labels */
+      font-size: 1.1em;
+    }
+    textarea {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid var(--sg-sailing-cool-grey-4c); /* Light grey border */
+      border-radius: 6px;
+      font-size: 1em;
+      resize: vertical;
+      min-height: 80px;
+      box-sizing: border-box;
+      font-family: 'Roboto', sans-serif; /* Ensure Roboto for textareas */
+      font-weight: 300; /* Roboto Light */
+      color: var(--sg-sailing-cool-grey-10c);
+    }
+    textarea:focus {
+      border-color: var(--sg-sailing-blue); /* Brand Blue on focus */
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,170,188,0.5); /* Blue shadow */
+    }
+    button {
+      background-color: var(--sg-sailing-red-primary); /* Primary Red for button */
+      color: white;
+      padding: 15px 25px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.2em;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background-color 0.3s ease;
+      font-family: 'Montserrat', sans-serif; /* Use Montserrat for button text */
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    button:hover {
+      background-color: var(--sg-sailing-red-secondary); /* Darker Red on hover */
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 25px;
+      font-style: italic;
+      color: var(--sg-sailing-blue); /* Brand Blue for loading text */
+      display: none;
+      font-size: 1.1em;
+    }
+    #output {
+      margin-top: 40px;
+      padding: 25px;
+      background-color: #f8fcfd; /* Very light background for output */
+      border: 1px solid var(--sg-sailing-cool-grey-4c); /* Light grey border */
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 200px;
+      font-size: 1.05em;
+      line-height: 1.8;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+      color: var(--sg-sailing-cool-grey-10c);
+      font-family: 'Roboto', sans-serif; /* Ensure Roboto for output text */
+      font-weight: 400; /* Roboto regular */
+    }
+    #output h3 {
+      color: var(--sg-sailing-red-primary); /* Primary Red for output heading */
+      margin-top: 0;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 1.6em;
+      font-family: 'Montserrat', sans-serif; /* Montserrat for output heading */
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    #output p {
+      text-align: left; /* Output philosophy should be left-aligned */
+      font-size: 1em;
+      margin-bottom: 1em;
+      padding: 0;
+      color: var(--sg-sailing-cool-grey-10c);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Craft Your Coaching Philosophy</h1>
+    <p>This tool will help you articulate your personal coaching philosophy by asking about your motivations, values, objectives, and desired athlete experiences. Please provide brief answers for each question.</p>
+
+    <div class="question-group">
+      <label for="q1">1) Why do you coach? What truly motivates you to take up coaching?</label>
+      <textarea id="q1" maxlength="1000" placeholder="e.g., 'I coach because sailing taught me resilience and freedom.'"></textarea>
+    </div>
+
+    <div class="question-group">
+      <label for="q2">2) What are the key values that will anchor you when you are coaching?</label>
+      <textarea id="q2" maxlength="1000" placeholder="e.g., 'Commitment and Integrity are paramount.'"></textarea>
+    </div>
+
+    <div class="question-group">
+      <label for="q3">3) What are your main coaching objectives? What do you want your athletes to achieve, beyond just winning? What is your definition of athletic success?</label>
+      <textarea id="q3" maxlength="1000" placeholder="e.g., 'My objective is holistic athlete development. Success is growth, not just trophies.'"></textarea>
+    </div>
+
+    <div class="question-group">
+      <label for="q4">4) What types of experiences do you want your athletes to have under your guidance? What are the specific coaching behaviors, actions, and practices you are committed to doing?</label>
+      <textarea id="q4" maxlength="1000" placeholder="e.g., 'I want them to experience joy, challenge, and self-discovery. I'll foster open communication and positive feedback.'"></textarea>
+    </div>
+
+    <button id="generateBtn" onclick="generatePhilosophy()">Generate Philosophy</button>
+    <div class="loading" id="loadingMessage">Generating your unique coaching philosophy... This may take a moment.</div>
+    <p class="usage-note" style="font-size:0.85em;color:#606A70;margin-top:8px;">Shared limit: 15 generations per day across all users.</p>
+    <div id="output">Your AI-generated coaching philosophy will appear here.</div>
+  </div>
+
+  <script>
+
+    // Data comes live from the Google Sheet via Apps Script on every page load.
+    // fetch() sends no Google cookies, so the multiple-account error cannot happen here.
+    function hubGet(execUrl) {
+      return fetch(execUrl + '?action=data&t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+    }
+    function hubPost(execUrl, body) {
+      // text/plain avoids a CORS preflight, which Apps Script cannot answer.
+      return fetch(execUrl, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    }
+    function safeLinks(root) {
+      root.querySelectorAll('a[href]').forEach(function (a) {
+        if (!/^(https?:|mailto:)/i.test(a.getAttribute('href'))) a.removeAttribute('href');
+        a.setAttribute('rel', 'noopener noreferrer'); a.setAttribute('target', '_blank');
+      });
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    // Light formatting for AI text: escape first, then allow **bold** and line breaks.
+    function fmt(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
+    var PHIL_API = "https://script.google.com/macros/s/AKfycbw5sa9GBKbVtxlgtYocgc0c7Z97Jpm44w4tLP7xj4Yz29J0Zn4DOfYupVVMlk0fYSLd/exec";
+    function generatePhilosophy() {
+      const q1Input = document.getElementById('q1').value;
+      const q2Input = document.getElementById('q2').value;
+      const q3Input = document.getElementById('q3').value;
+      const q4Input = document.getElementById('q4').value;
+
+      const outputDiv = document.getElementById('output');
+      const loadingMessage = document.getElementById('loadingMessage');
+      const generateButton = document.getElementById('generateBtn');
+
+      // Basic validation
+      if (!q1Input.trim() || !q2Input.trim() || !q3Input.trim() || !q4Input.trim()) {
+        outputDiv.innerHTML = '<p style="color: var(--sg-sailing-red-primary);">Please provide an answer for all four questions before generating.</p>';
+        return;
+      }
+
+      outputDiv.innerHTML = ''; // Clear previous output
+      loadingMessage.style.display = 'block'; // Show loading message
+      generateButton.disabled = true; // Disable button during generation
+
+      // Package inputs into a single object to send to the backend
+      const formData = {
+        q1: q1Input,
+        q2: q2Input,
+        q3: q3Input,
+        q4: q4Input
+      };
+
+      // Call the server-side Apps Script function
+      const onSuccess = function(responseObject) { // Expect an object from the server
+          loadingMessage.style.display = 'none'; // Hide loading message
+          generateButton.disabled = false; // Re-enable button
+
+          if (responseObject.success) {
+            outputDiv.innerHTML = `<h3>Your Coaching Philosophy:</h3><p>${fmt(responseObject.philosophy)}</p>`;
+          } else {
+            outputDiv.innerHTML = `<p style="color: var(--sg-sailing-red-primary);">Error: ${esc(responseObject.message)}</p>`;
+          }
+        };
+      const onFailure = function(error) {
+          loadingMessage.style.display = 'none'; // Hide loading message
+          generateButton.disabled = false; // Re-enable button
+          outputDiv.innerHTML = `<p style="color: var(--sg-sailing-red-primary);">Something went wrong reaching the generator. Please try again in a moment.</p>`;
+          console.error("Generator call failed: ", error);
+        };
+      hubPost(PHIL_API, formData).then(onSuccess).catch(onFailure);
+    }
+  </script>
+</body>
+</html>

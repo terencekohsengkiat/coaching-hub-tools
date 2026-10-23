@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sailing Training Venues Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .floating-panel { position: absolute; z-index: 10; background-color: #fff; padding: 10px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        #controls-panel { top: 10px; left: 50%; transform: translateX(-50%); }
+        #controls-panel select { padding: 5px; }
+        #legend-panel { bottom: 20px; right: 10px; font-size: 0.85em; }
+        #legend-panel h4 { margin: 0 0 8px 0; font-size: 0.9em; text-transform: uppercase; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .legend-color-box { width: 18px; height: 10px; margin-right: 8px; border: 1px solid #aaa; }
+        .info-window-content { max-width: 350px; line-height: 1.5; }
+        .info-window-content h4 { margin: 0 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .info-window-content p { margin: 5px 0; }
+        .info-window-content ul { margin-top: 5px; padding-left: 20px; }
+        .flight-time-info { margin-top:15px; border-top:1px solid #eee; padding-top:10px; font-size: 0.85em; color: #555; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="controls-panel" class="floating-panel">
+        <label for="boatClassFilter">Boat Class:</label>
+        <select id="boatClassFilter">
+            <option value="">All Classes</option>
+        </select>
+    </div>
+    <div id="legend-panel" class="floating-panel">
+        <h4>Est. Flight Duration</h4>
+        <div class="legend-item"><span class="legend-color-box" style="background-color: #00AA00;"></span> &lt; 5 hours</div>
+        <div class="legend-item"><span class="legend-color-box" style="background-color: #EDA900;"></span> 5 - 10 hours</div>
+        <div class="legend-item"><span class="legend-color-box" style="background-color: #BE1E2D;"></span> &gt; 10 hours</div>
+    </div>
+    <script>
+
+    // Data comes live from the Google Sheet via Apps Script on every page load.
+    // fetch() sends no Google cookies, so the multiple-account error cannot happen here.
+    function hubGet(execUrl) {
+      return fetch(execUrl + '?action=data&t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+    }
+    function hubPost(execUrl, body) {
+      // text/plain avoids a CORS preflight, which Apps Script cannot answer.
+      return fetch(execUrl, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    }
+    function safeLinks(root) {
+      root.querySelectorAll('a[href]').forEach(function (a) {
+        if (!/^(https?:|mailto:)/i.test(a.getAttribute('href'))) a.removeAttribute('href');
+        a.setAttribute('rel', 'noopener noreferrer'); a.setAttribute('target', '_blank');
+      });
+    }
+
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+        let venuesData = [];
+        let allBoatClasses = [];
+        const singaporePosition = { lat: 1.3521, lng: 103.8198 };
+        const AVERAGE_FLIGHT_SPEED_KMH = 850;
+        const FIXED_OVERHEAD_HOURS = 0.75;
+        
+        let map;
+        let markers = [];
+        const polylines = {};
+        let infoWindow;
+
+        function initMap() {
+            console.log("initMap called from inline script."); // Diagnostic log
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 4, center: singaporePosition, mapTypeId: 'roadmap'
+            });
+            infoWindow = new google.maps.InfoWindow();
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(singaporePosition);
+            new google.maps.Marker({ position: singaporePosition, map: map, title: "Singapore (Origin)", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#9D0A0E", fillOpacity: 1, strokeWeight: 2, strokeColor: "#FFFFFF" } });
+            
+            if (!venuesData || venuesData.length === 0) {
+                console.warn("No venue data to plot."); // Diagnostic log
+            }
+
+            venuesData.forEach(venue => {
+                const venuePosition = { lat: venue.lat, lng: venue.lng };
+                const marker = new google.maps.Marker({ position: venuePosition, map: map, title: venue.name, boat_classes: venue.boat_classes, id: venue.id });
+                const distanceKm = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(singaporePosition), new google.maps.LatLng(venuePosition)) / 1000;
+                const estimatedHours = (distanceKm / AVERAGE_FLIGHT_SPEED_KMH) + FIXED_OVERHEAD_HOURS;
+                let pathColor = "#BE1E2D";
+                if (estimatedHours < 5) { pathColor = '#00AA00'; } else if (estimatedHours <= 10) { pathColor = '#EDA900'; }
+                const flightPath = new google.maps.Polyline({ path: [singaporePosition, venuePosition], geodesic: true, strokeColor: pathColor, strokeOpacity: 0.8, strokeWeight: 2.5 });
+                flightPath.setMap(map);
+                polylines[venue.id] = flightPath;
+                marker.addListener('click', () => {
+                    let estFlightTimeText;
+                    if (estimatedHours < 1) { estFlightTimeText = (estimatedHours * 60).toFixed(0) + " min"; } else { estFlightTimeText = estimatedHours.toFixed(1) + " hrs"; }
+                    let content = '<div class="info-window-content"><h4>' + esc(venue.name) + '</h4>';
+                    if (venue.website) { let url = venue.website; if (!/^https?:\/\//i.test(url)) { url = 'https://' + url; } content += '<p><strong>Website:</strong> <a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(venue.website) + '</a></p>'; }
+                    if (venue.notes) { content += '<p><strong>Notes:</strong><br>' + esc(venue.notes).replace(/\n/g, '<br>') + '</p>'; }
+                    if (venue.boat_classes && venue.boat_classes.length > 0) { content += '<p><strong>Available Classes:</strong><ul>'; venue.boat_classes.forEach(bc => { content += '<li>' + esc(bc) + '</li>'; }); content += '</ul></p>'; }
+                    content += '<p class="flight-time-info"><strong>Est. Flight Time:</strong> ' + estFlightTimeText + ' (approx. ' + distanceKm.toFixed(0) + ' km)</p>';
+                    content += '</div>';
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                });
+                markers.push(marker);
+                bounds.extend(marker.getPosition());
+            });
+            if (venuesData.length > 0) { map.fitBounds(bounds); }
+            document.getElementById('boatClassFilter').addEventListener('change', filterMarkers);
+        }
+
+        function filterMarkers() {
+            const selectedClass = document.getElementById('boatClassFilter').value;
+            markers.forEach(marker => {
+                const venueId = marker.id;
+                const polyline = polylines[venueId];
+                if (selectedClass === "" || marker.boat_classes.includes(selectedClass)) {
+                    marker.setVisible(true); if (polyline) polyline.setVisible(true);
+                } else {
+                    marker.setVisible(false); if (polyline) polyline.setVisible(false);
+                }
+            });
+        }
+        function populateFilter() {
+        const filterSelect = document.getElementById('boatClassFilter');
+        allBoatClasses.forEach(bc => {
+            const option = document.createElement('option');
+            option.value = bc;
+            option.textContent = bc;
+            filterSelect.appendChild(option);
+        });
+        }
+
+        // Load venues live from the sheet, then load Google Maps with the key the backend provides.
+        hubGet('https://script.google.com/macros/s/AKfycbxzF4cWaxDUtkP6NTizSdxfOzHQGuQ4MH95HDRNvJu7vRNq0ftKnF_g0_TuDfegveZBaw/exec').then(function (d) {
+            venuesData = d.venues || [];
+            allBoatClasses = d.boatClasses || [];
+            populateFilter();
+            var s = document.createElement('script');
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(d.mapsKey) + '&libraries=geometry&callback=initMap';
+            s.async = true; s.defer = true;
+            s.onerror = function () { showLoadError('Google Maps could not load.'); };
+            document.head.appendChild(s);
+        }).catch(function (e) { showLoadError('Unable to load venue data. Please refresh the page.'); console.error(e); });
+
+        function showLoadError(msg) {
+            var m = document.getElementById('map');
+            m.innerHTML = '<p style="padding:20px;color:#BE1E2D;font-family:Arial">' + esc(msg) + '</p>';
+        }
+    </script>
+</body>
+</html>

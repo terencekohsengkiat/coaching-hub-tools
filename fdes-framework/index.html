@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FDES Framework - Singapore Sailing Federation</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Singapore Sailing Federation brand colors */
+            --ssf-red: #BE1E2D;          /* Pantone 200C */
+            --ssf-dark-red: #9D0A0E;     /* Pantone 202C */
+            --ssf-gold: #EDA900;         /* Pantone 124C */
+            --ssf-teal: #00AABC;         /* Pantone 7466C */
+            --ssf-blue: #2383C6;         /* Pantone 2925C */
+            --ssf-beige: #D8CEB3;        /* Pantone 7534C */
+            --ssf-light-grey: #E6E7E8;   /* Pantone Cool Grey 4C */
+            --ssf-dark-grey: #606A70;    /* Pantone Cool Grey 10C */
+
+            /* FDES Framework mapped colors */
+            --foundation-color: var(--ssf-blue);
+            --foundation-hover: #4495ce;
+            --development-color: var(--ssf-teal);
+            --development-hover: #26b6c6;
+            --excellence-color: var(--ssf-red);
+            --excellence-hover: #c73f4c;
+            --sustainability-color: var(--ssf-gold);
+            --sustainability-hover: #efb526;
+            --default-color: var(--ssf-dark-grey);
+            --default-hover: #778085;
+
+            /* Other UI colors */
+            --text-dark: #2c3e50;
+            --text-light: #ffffff;
+            --background-light: #f5f7fa;
+            --background-dark: var(--ssf-dark-grey);
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-dark: rgba(0, 0, 0, 0.2);
+            --transition-speed: 0.3s;
+        }
+
+        @font-face {
+            font-family: 'Gotham';
+            src: url('https://fonts.cdnfonts.com/css/gotham') format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--background-light);
+            overflow-x: hidden;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 {
+            font-family: 'Gotham', 'Arial', sans-serif;
+            font-weight: 500;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        h2 { font-size: 2rem; margin-bottom: 1rem; }
+        h3 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+        p  { margin-bottom: 1rem; }
+
+        p br {
+            display: block;
+            content: "";
+            margin-top: 0.5em;
+        }
+
+        strong {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        a {
+            color: var(--foundation-color);
+            text-decoration: none;
+            transition: color var(--transition-speed) ease;
+        }
+
+        a:hover {
+            color: var(--foundation-hover);
+            text-decoration: underline;
+        }
+
+        /* Header styles */
+        header {
+            background: linear-gradient(135deg, var(--ssf-red) 0%, var(--ssf-dark-red) 100%);
+            color: var(--text-light);
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px var(--shadow-light);
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" x="0" y="0" width="100" height="100"/></svg>');
+            opacity: 0.1;
+        }
+
+        header h1 {
+            margin: 0;
+            font-family: 'Gotham', 'Arial', sans-serif;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px var(--shadow-dark);
+        }
+
+        header p {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 300;
+            font-size: 1.2rem;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        /* ===================== Loading Spinner ===================== */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--ssf-light-grey);
+            border-top: 4px solid var(--ssf-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            color: var(--ssf-dark-grey);
+            font-weight: 400;
+        }
+
+        /* ===================== Framework cards grid ===================== */
+        .framework-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        /* Card styles */
+        .framework-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px var(--shadow-light);
+            overflow: hidden;
+            transition: all 0.4s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transform: translateY(0);
+        }
+
+        .framework-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            z-index: 2;
+        }
+
+        .framework-card.foundation::before { background: linear-gradient(90deg, var(--ssf-blue) 0%, #4495ce 100%); }
+        .framework-card.development::before { background: linear-gradient(90deg, var(--ssf-teal) 0%, #26b6c6 100%); }
+        .framework-card.excellence::before { background: linear-gradient(90deg, var(--ssf-red) 0%, var(--ssf-dark-red) 100%); }
+        .framework-card.sustainability::before { background: linear-gradient(90deg, var(--ssf-gold) 0%, #c68c00 100%); }
+        .framework-card.default::before { background: linear-gradient(90deg, var(--ssf-dark-grey) 0%, #778085 100%); }
+
+        .framework-card:hover {
+            transform: translateY(-20px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+
+        .card-header {
+            padding: 20px;
+            color: var(--text-light);
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .framework-card.foundation .card-header { background: linear-gradient(135deg, var(--ssf-blue) 0%, #1a5276 100%); }
+        .framework-card.development .card-header { background: linear-gradient(135deg, var(--ssf-teal) 0%, #007a8c 100%); }
+        .framework-card.excellence .card-header { background: linear-gradient(135deg, var(--ssf-red) 0%, var(--ssf-dark-red) 100%); }
+        .framework-card.sustainability .card-header { background: linear-gradient(135deg, var(--ssf-gold) 0%, #c68c00 100%); }
+        .framework-card.default .card-header { background: linear-gradient(135deg, var(--ssf-dark-grey) 0%, #4a5258 100%); }
+
+        .card-body {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+        }
+
+        .card-description {
+            margin-bottom: 20px;
+            flex-grow: 1;
+            line-height: 1.7;
+        }
+
+        .card-footer {
+            text-align: center;
+            padding: 20px 25px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            background-color: rgba(0,0,0,0.01);
+        }
+
+        .learn-more-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all var(--transition-speed) ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .framework-card.foundation .learn-more-btn { background: var(--ssf-blue); color: white; }
+        .framework-card.development .learn-more-btn { background: var(--ssf-teal); color: white; }
+        .framework-card.excellence .learn-more-btn { background: var(--ssf-red); color: white; }
+        .framework-card.sustainability .learn-more-btn { background: var(--ssf-gold); color: white; }
+        .framework-card.default .learn-more-btn { background: var(--ssf-dark-grey); color: white; }
+
+        .learn-more-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 10px rgba(0,0,0,0.15);
+            text-decoration: none;
+        }
+
+        .framework-card.foundation .learn-more-btn:hover { background: var(--foundation-hover); color: white; }
+        .framework-card.development .learn-more-btn:hover { background: var(--development-hover); color: white; }
+        .framework-card.excellence .learn-more-btn:hover { background: var(--excellence-hover); color: white; }
+        .framework-card.sustainability .learn-more-btn:hover { background: var(--sustainability-hover); color: white; }
+        .framework-card.default .learn-more-btn:hover { background: var(--default-hover); color: white; }
+
+        .learn-more-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        /* ===================== Modal styles ===================== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .modal[style*="display: block"] { opacity: 1; }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px var(--shadow-dark);
+            width: 80%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(-30px);
+            opacity: 0;
+            transition: transform var(--transition-speed) ease,
+                        opacity var(--transition-speed) ease;
+        }
+
+        .modal[style*="display: block"] .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px; top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color var(--transition-speed) ease;
+            z-index: 10;
+            width: 40px; height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-button:hover {
+            color: var(--text-dark);
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .modal-header {
+            padding: 0 0 15px 0;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            position: relative;
+        }
+
+        .modal.foundation .modal-header h2 { color: var(--foundation-color); }
+        .modal.development .modal-header h2 { color: var(--development-color); }
+        .modal.excellence .modal-header h2 { color: var(--excellence-color); }
+        .modal.sustainability .modal-header h2 { color: var(--sustainability-color); }
+        .modal.default .modal-header h2 { color: var(--default-color); }
+
+        .modal-body { padding-right: 10px; }
+
+        .detail-section {
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+            animation-delay: calc(var(--animation-order) * 0.1s);
+        }
+
+        @keyframes fadeIn {
+            0%   { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-section h3 {
+            padding: 12px 15px;
+            margin: 30px 0 15px 0;
+            position: relative;
+            border-radius: 5px;
+            font-size: 1.3rem;
+        }
+
+        .modal.foundation .detail-section h3 { background-color: rgba(35, 131, 198, 0.1); color: var(--ssf-blue); border-left: 4px solid var(--ssf-blue); }
+        .modal.development .detail-section h3 { background-color: rgba(0, 170, 188, 0.1); color: var(--ssf-teal); border-left: 4px solid var(--ssf-teal); }
+        .modal.excellence .detail-section h3 { background-color: rgba(190, 30, 45, 0.1); color: var(--ssf-red); border-left: 4px solid var(--ssf-red); }
+        .modal.sustainability .detail-section h3 { background-color: rgba(237, 169, 0, 0.1); color: var(--ssf-gold); border-left: 4px solid var(--ssf-gold); }
+        .modal.default .detail-section h3 { background-color: rgba(96, 106, 112, 0.1); color: var(--ssf-dark-grey); border-left: 4px solid var(--ssf-dark-grey); }
+
+        .detail-content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow-light);
+        }
+
+        .detail-content p {
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+
+        .detail-content br {
+            display: block;
+            margin-top: 0.5em;
+        }
+
+        .detail-content br + br { margin-top: 0; }
+        .detail-content p:last-child { margin-bottom: 0; }
+
+        .detail-content p strong {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        /* ===================== Footer ===================== */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, var(--background-dark) 0%, #34495e 100%);
+            color: var(--text-light);
+            margin-top: 60px;
+            position: relative;
+        }
+
+        footer p { margin: 0; opacity: 0.9; }
+
+        /* Scrollbar styling */
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .modal-content::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+        .modal-content::-webkit-scrollbar-thumb:hover { background: #ccc; }
+
+        /* ===================== Responsive ===================== */
+        @media (max-width: 992px) {
+            .framework-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+            .modal-content { width: 90%; padding: 25px; }
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.8rem; }
+        }
+
+        @media (max-width: 768px) {
+            .framework-grid { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto 40px auto; }
+            .modal-content { width: 95%; margin: 10% auto; max-height: 80vh; padding: 20px; }
+            .card-header { padding: 15px; font-size: 1.3rem; }
+            .card-body { padding: 20px; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.6rem; }
+            .detail-section h3 { font-size: 1.2rem; padding: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 15px; }
+            header { padding: 30px 15px; }
+            .modal-content { padding: 15px; }
+            .detail-content { padding: 15px; }
+            .learn-more-btn { padding: 8px 16px; font-size: 0.85rem; }
+        }
+
+        @keyframes staggered-fade-in {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Print styles */
+        @media print {
+            header, footer, .learn-more-btn, .close-button { display: none; }
+            body { background: white; }
+            .framework-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+            .detail-content { box-shadow: none; border: 1px solid #ddd; }
+        }
+
+        /* Animation styles */
+        .framework-card {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease;
+        }
+
+        .framework-card.card-visible { opacity: 1; }
+        .framework-card.card-visible:hover { transform: translateY(-20px); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>FDES Framework</h1>
+        <p>Singapore Sailing Federation's Athlete Development Framework</p>
+    </header>
+
+    <div class="container">
+        <!-- Loading spinner — shown while data is being fetched -->
+        <div id="loading" class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading framework data...</div>
+        </div>
+
+        <!-- Card grid — populated by JavaScript after data loads -->
+        <div id="framework-grid" class="framework-grid" style="display:none;"></div>
+
+        <!-- Modals container — populated by JavaScript after data loads -->
+        <div id="modals-container"></div>
+    </div>
+
+    <footer>
+        <p>&copy; Singapore Sailing Federation - FDES Framework</p>
+    </footer>
+
+    <script>
+    // Fetch data from the server asynchronously
+
+    // Data comes live from the Google Sheet via Apps Script on every page load.
+    // fetch() sends no Google cookies, so the multiple-account error cannot happen here.
+    function hubGet(execUrl) {
+      return fetch(execUrl + '?action=data&t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+    }
+    function hubPost(execUrl, body) {
+      // text/plain avoids a CORS preflight, which Apps Script cannot answer.
+      return fetch(execUrl, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    }
+    function safeLinks(root) {
+      root.querySelectorAll('a[href]').forEach(function (a) {
+        if (!/^(https?:|mailto:)/i.test(a.getAttribute('href'))) a.removeAttribute('href');
+        a.setAttribute('rel', 'noopener noreferrer'); a.setAttribute('target', '_blank');
+      });
+    }
+
+    hubGet('https://script.google.com/macros/s/AKfycbyuC-nV3V2mkZVOMPsXgen_f6FIDw0SjLnLjRIX6piLyZC-tSiHzDBZsrVzkEqEcKg/exec').then(function (d) { renderPage(d.stages); }).catch(showError);
+
+    /**
+     * Called when getStagesData() returns successfully.
+     * Builds all cards and modals, then hides the spinner.
+     */
+    function renderPage(stagesData) {
+        var grid = document.getElementById('framework-grid');
+        var modalsContainer = document.getElementById('modals-container');
+
+        // Build cards
+        for (var i = 0; i < stagesData.length; i++) {
+            var stage = stagesData[i];
+            grid.appendChild(createCard(stage));
+            modalsContainer.appendChild(createModal(stage));
+        }
+
+        // Hide spinner, show grid
+        document.getElementById('loading').style.display = 'none';
+        grid.style.display = '';
+
+        safeLinks(document.body);
+        // Attach event listeners
+        attachEventListeners();
+    }
+
+    /**
+     * Called if getStagesData() fails.
+     */
+    function showError(err) {
+        var loading = document.getElementById('loading');
+        loading.innerHTML =
+            '<div style="color:var(--ssf-red);font-size:1.2rem;text-align:center;">' +
+            'Unable to load framework data. Please try refreshing the page.' +
+            '</div>';
+    }
+
+    /**
+     * Creates a card DOM element for a stage.
+     */
+    function createCard(stage) {
+        var card = document.createElement('div');
+        card.className = 'framework-card ' + stage.colorClass;
+        card.setAttribute('data-stage', stage.name);
+
+        card.innerHTML =
+            '<div class="card-header">' + escapeText(stage.name) + '</div>' +
+            '<div class="card-body">' +
+                '<div class="card-description">' + stage.description + '</div>' +
+            '</div>' +
+            '<div class="card-footer">' +
+                '<a href="#" class="learn-more-btn">Learn More</a>' +
+            '</div>';
+
+        return card;
+    }
+
+    /**
+     * Creates a modal DOM element for a stage, including all detail sections.
+     */
+    function createModal(stage) {
+        var modal = document.createElement('div');
+        modal.id = stage.modalId;
+        modal.className = 'modal ' + stage.colorClass;
+
+        var sectionsHtml = '';
+        for (var j = 0; j < stage.details.length; j++) {
+            var detail = stage.details[j];
+            sectionsHtml +=
+                '<div class="detail-section" style="--animation-order:' + j + ';">' +
+                    '<h3>' + escapeText(detail.fieldName) + '</h3>' +
+                    '<div class="detail-content">' +
+                        '<p>' + detail.value + '</p>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        modal.innerHTML =
+            '<div class="modal-content">' +
+                '<span class="close-button" data-modal="' + stage.modalId + '">&times;</span>' +
+                '<div class="modal-header">' +
+                    '<h2>' + escapeText(stage.name) + '</h2>' +
+                '</div>' +
+                '<div class="modal-body">' + sectionsHtml + '</div>' +
+            '</div>';
+
+        // Convert consecutive <br><br> to paragraph spacing
+        var paragraphs = modal.querySelectorAll('.detail-content p');
+        for (var p = 0; p < paragraphs.length; p++) {
+            paragraphs[p].innerHTML = paragraphs[p].innerHTML.replace(/<br><br>/g, '</p><p>');
+        }
+
+        return modal;
+    }
+
+    /**
+     * Escapes text for safe insertion into HTML element content.
+     */
+    function escapeText(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    /**
+     * Attaches all interactive event listeners after the DOM is built.
+     */
+    function attachEventListeners() {
+        var cards = document.querySelectorAll('.framework-card');
+
+        // Card click -> open modal
+        cards.forEach(function(card) {
+            card.addEventListener('click', function() {
+                openModal(this.getAttribute('data-stage'));
+            });
+
+            var btn = card.querySelector('.learn-more-btn');
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openModal(card.getAttribute('data-stage'));
+                });
+            }
+        });
+
+        // Close buttons
+        document.querySelectorAll('.close-button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var modal = document.getElementById(this.getAttribute('data-modal'));
+                if (modal) { modal.style.display = 'none'; }
+                document.body.classList.remove('modal-open');
+            });
+        });
+
+        // Click outside modal to close
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            }
+        });
+
+        // Escape key to close
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal[style*="display: block"]').forEach(function(modal) {
+                    modal.style.display = 'none';
+                });
+                document.body.classList.remove('modal-open');
+            }
+        });
+
+        // Card entrance animations
+        if ('IntersectionObserver' in window) {
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('card-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            cards.forEach(function(card) { observer.observe(card); });
+        } else {
+            cards.forEach(function(card) { card.classList.add('card-visible'); });
+        }
+    }
+
+    /**
+     * Opens the modal for a given stage name.
+     */
+    function openModal(stageName) {
+        var modalId = 'modal-' + stageName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        var modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.classList.add('modal-open');
+        }
+    }
+    </script>
+</body>
+</html>
